@@ -1,0 +1,17 @@
+{
+	"name": "panels",
+	"version": "0.0.1",
+	"dependencies": {
+		"jquery": "lastest",
+		"underscore": "latest",
+		"backbone": "latest",
+		"requirejs": "latest",
+
+	    "qunit": "latest",
+
+	    "buildable": "git://github.com/simonfan/buildable.git",
+	    "_interface": "git://github.com/simonfan/_interface.git"
+	},
+
+	"main": "panels.js"
+}
