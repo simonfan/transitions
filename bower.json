@@ -1,5 +1,5 @@
 {
-	"name": "panels",
+	"name": "transitions",
 	"version": "0.0.1",
 	"dependencies": {
 		"jquery": "lastest",
@@ -13,5 +13,5 @@
 	    "_interface": "git://github.com/simonfan/_interface.git"
 	},
 
-	"main": "panels.js"
+	"main": "transitions.js"
 }
