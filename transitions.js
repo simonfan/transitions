@@ -1,5 +1,5 @@
-define(['jquery','buildable','backbone','underscore','_interface'], 
-function(   $   , Buildable , Backbone , undef      , undef      ) {
+define(['jquery','buildable','backbone','underscore','_.mixins'], 
+function(   $   , Buildable , Backbone , undef      , undef    ) {
 
 	////////////////////////
 	// TRANSITION METHODS //
