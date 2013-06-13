@@ -62,6 +62,9 @@ function(   $   , Buildable , Backbone , undef      , undef      ) {
 			this.id = data.id || data.$li.prop('id');
 			this.$li = data.$li;
 
+			// this.$el is just the a reference to this.$li
+			this.$el = this.$li;
+
 			///////////////
 			//// options //
 			///////////////
