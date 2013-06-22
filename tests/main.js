@@ -8,7 +8,7 @@ require.config({
 		'backbone': 'components/backbone/backbone',
 
 		'buildable': 'components/buildable/buildable',
-		'_interface': 'components/_interface/_interface',
+		'_.mixins': 'components/_.mixins/_.mixins',
 
 		// the module files go here
 		'transitions': '../transitions',

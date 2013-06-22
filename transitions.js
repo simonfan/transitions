@@ -278,47 +278,47 @@ function(   $   , Buildable , Backbone , undef      , undef    ) {
 			elementIds = _.isArray(elementIds) ? elementIds : [elementIds];
 
 			// build a state object
-			var stateObj = {};
+			var states = {};
 
 			_.each(elementIds, function(id, index) {
-				stateObj[ id ] = state;
+				states[ id ] = state;
 			});
 
-			return this.to(stateObj, options);
+			return this.to(states, options);
 		},
 
 		// general method that accepts strings, arrays and state objects
 		// and behaves accordingly.
-		to: function(name_or_obj, options) {
+		to: function(name_or_states, options) {
 
-			var type = typeof name_or_obj;
+			var type = typeof name_or_states;
 
 			if (type === 'string') {
-				// assume name_or_obj is a state name
+				// assume name_or_states is a state name
 
-				if (!this.states[ name_or_obj ]) {
-					throw new Error('State "' + name_or_obj +'" is not defined.');
+				if (!this.states[ name_or_states ]) {
+					throw new Error('State "' + name_or_states +'" is not defined.');
 				}
 
-				return this._to(this.states[ name_or_obj ], options);
+				return this._to(this.states[ name_or_states ], options);
 
 			} else if (type === 'object') {
 				// if it is an object, assume it is an state object
-				return this._to(name_or_obj, options);
+				return this._to(name_or_states, options);
 			}
 		},
 
 		// to helper. 
-		_to: function(stateObj, options) {
-			// stateObj must be a stateObj object indicating at which stateObj each of the 
+		_to: function(states, options) {
+			// states must be a states object indicating at which states each of the 
 			// elements should be.
 
 			var _this = this,
 				defer = $.Deferred(),
 				elDefers = [];			// var to hold all element transition deferrals
 
-			_.each(stateObj, function(elState, elId) {
-				// a 'stateObj' is an hash-object that contains element ids as keys and the 
+			_.each(states, function(elState, elId) {
+				// a 'states' is an hash-object that contains element ids as keys and the 
 				// desired element-state as values: { el-id: el-state }
 
 				var element = _this.elements[ elId ];
