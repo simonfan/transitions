@@ -13,7 +13,7 @@ function(   $   , Buildable , Backbone , undef      , undef    ) {
 				}
 			})
 
-			this.$li.animate({ opacity: 1 }, options);
+			this.$li.animate({ opacity: 1 , zIndex: 1}, options);
 		},
 
 		fadeOut: function(defer, options) {
@@ -24,10 +24,9 @@ function(   $   , Buildable , Backbone , undef      , undef    ) {
 				}
 			})
 
-			this.$li.animate({ opacity: 0 }, options);
+			this.$li.animate({ opacity: 0 , zIndex: 0 }, options);
 		}
 	};
-
 
 	////////////////////////////
 	// TRANSITIONABLE ELEMENT //
@@ -342,10 +341,13 @@ function(   $   , Buildable , Backbone , undef      , undef    ) {
 		// define a transition function
 		defineTransitionMethod: function(name, func) {
 			T.name = func;
-		},
+		}
 
 
 	});
+
+
+asdasdasd
 
 	return Transitions;
 });
