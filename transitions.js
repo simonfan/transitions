@@ -1,32 +1,18 @@
 define(['jquery','buildable','backbone','underscore','_.mixins'], 
 function(   $   , Buildable , Backbone , undef      , undef    ) {
+	//////////////////
+	///// STATES /////
+	//////////////////
+	// states are individual element style objects
+	var __states = {};
 
-	////////////////////////
-	// TRANSITION METHODS //
-	////////////////////////
-	var T = {
-		fadeIn: function(defer, options) {
-			options = options || {};
-			options = _.extend(options, {
-				done: function() {
-					defer.resolve();
-				}
-			})
 
-			this.$li.animate({ opacity: 1 , zIndex: 1}, options);
-		},
-
-		fadeOut: function(defer, options) {
-			options = options || {};
-			options = _.extend(options, {
-				done: function() {
-					defer.resolve();
-				}
-			})
-
-			this.$li.animate({ opacity: 0 , zIndex: 0 }, options);
-		}
-	};
+	//////////////////
+	///// SCENES /////
+	//////////////////
+	// scenes are hashes with the element ids as keys and the state
+	// each element should be at as 
+	var __scenes = {};
 
 	////////////////////////////
 	// TRANSITIONABLE ELEMENT //
@@ -40,18 +26,8 @@ function(   $   , Buildable , Backbone , undef      , undef    ) {
 				id: 'Element init',
 				obj: data,
 				typeofs: {
-					id: ['string','number','undefined'],
+				//	id: ['string','number','undefined'],
 					$li: 'object',
-
-					// show and hide methods
-					show: ['string','undefined'],
-					hide: ['string','undefined'],
-
-					// optionally pass in other statuses
-					otherStatuses: ['object','undefined'],
-
-					// show and hide options
-					animateoptions: ['object', 'undefined'],
 				}
 			});
 
@@ -64,24 +40,10 @@ function(   $   , Buildable , Backbone , undef      , undef    ) {
 			// this.$el is just the a reference to this.$li
 			this.$el = this.$li;
 
-			///////////////
-			//// options //
-			///////////////
-
-			// the transition methods (may contain methods other than show and hide)
-			var otherStatuses = data.otherStatuses || {};
-			this.transitionMethods = _.extend(otherStatuses, {
-				show: data.show || 'fadeIn',
-				hide: data.hide || 'fadeOut',
-			});
-
-			// the options passed to the transition methods.
-			this.animateoptions = data.animateoptions || {};
-
 			//////////////
 			/// status ///
 			//////////////
-			this.state = this.$li.css('opacity') > 0 ? 'show' : 'hide';
+			this.state = this.$li.prop('data-state')
 			this.transition = 'stopped';
 
 			// build
@@ -98,16 +60,34 @@ function(   $   , Buildable , Backbone , undef      , undef    ) {
 		},
 
 		_handleIni: function(state) {
-			this.transition = 'on-transition';
+			this.transition = 'active';
 
 			this.trigger(state + '-ini');
 		},
 
 		_handleEnd: function(state) {
+			this.transition = 'stopped';
 			this.state = state;
 
 			this.trigger(state + '-end')
 				.trigger(state);
+		},
+
+		/// close to api ///
+		// helper that processes the state object, in case
+		// there is any processing needed (if a function is a property of the state object)
+		_getstate: function(statename) {
+			var _this = this,
+				state = _.clone( __states[statename] );
+
+			_.each(state, function(item, name) {
+				if (typeof item === 'function') {
+					// call the function in the $el's context.
+					state[ name ] = item.call(_this.$el);
+				}
+			});
+
+			return state;
 		},
 
 		/////////////////
@@ -117,71 +97,15 @@ function(   $   , Buildable , Backbone , undef      , undef    ) {
 		// transitate is a general method that allows transitions
 		// using any of the defined transition methods defined, including
 		// the 'hide' and 'show'
-		transitate: function(state, options) {
-			// only do stuff if the transition method is defined in the page obj
-			if (this.transitionMethods[ state ]) {
-				return this._transitate(state, options);
-			} else {
-				throw new Error('Transition method for "' + state +'" is not defined on "'+ this.id +'".');
-			}
-		},
-
-		// transitate helper
-		_transitate: function(state, options) {
-			// INI //
-			// trigger state transition init
-			this.trigger('transition-ini', state);
-
-			// check current state
-			if (this.state === state) {
-				// if the required state is the current state, trigger the transition END
-				// and return true (an accomplished promise)
-				this.trigger('transition-end', state);
-
+		transitate: function(statename, options) {
+			if (this.state === statename) {
 				return true;
-
 			} else {
+				var state = this._getstate(statename);
 
-				// SETUP //
-				var _this = this,
-					defer = $.Deferred(),
-					options = _.extend({}, this.animateoptions, options);
-
-				// END //
-				$.when(defer).then(function() {
-					// trigger state transition end
-					_this.trigger('transition-end', state);
-				});
-
-				// TRANS //
-				T[ this.transitionMethods[ state ] ].call(this, defer, options);
-
-				return defer;
+				return this.$el.animate(state, options);
 			}
 		},
-
-		// shortcut for built in show method
-		show: function(options) {
-			return this._transitate('show', options);
-		},
-
-		// shortcut for built in hide method
-		hide: function(options) {
-			return this._transitate('hide', options);
-		},
-
-
-		// set the default animation options to be passed to the transition method
-		setAnimateOptions: function(options) {
-			this.animateoptions = options;
-		},
-
-		// set the transition method name 
-		setTransitionMethod: function(type, method) {
-			// type: show/hide
-			// method: method (fadeIn, fadeOut, etc.)
-			this.transitionMethods[ type ] = method;
-		}
 	});
 
 
@@ -213,12 +137,6 @@ function(   $   , Buildable , Backbone , undef      , undef    ) {
 			// options
 			this.animateoptions = data.animateoptions || {};
 
-
-			// states
-			this.states = _.extend({}, data.states);
-			// a 'state' is an hash-object that contains element ids as keys and the 
-			// desired element-state as values: { el-id: el-state }
-
 			// build
 			this._build();
 		},
@@ -239,115 +157,85 @@ function(   $   , Buildable , Backbone , undef      , undef    ) {
 					$li.prop('id', id);
 				}
 
-				_this.elements[ id ] = Element.build({
-					$li: $li,
-					id: id,
-				});
+				_this.elements[ id ] = Element.build({ $li: $li });
 			});
+		},
+
+		// conditional chain:
+		// 1: retrieves a scene object with the given name
+		// 2: retrieves a state with the given name and returns a scene object that 
+		//	  sets all elements to that state
+		// 3: false
+		_getScene: function(name) {
+			if (__scenes[name]) {
+				return __scenes[name];
+
+			} else if (__states[name]) {
+				var scene = {};
+
+				_.each(this.elements, function(element, id) {
+					scene[id] = __states[name];
+				})
+
+				return scene;
+			}
 		},
 
 		/////////////////
 		////// API //////
 		/////////////////
-		showElements: function(elementIds, synchronous, options) {
+		definestate: function(name, state) {
+			__states[ name ] = state;
+		},
 
-			var _this = this,
-				hideEls = _.difference( _.keys(this.elements), elementIds);
+		// receives an array of scenes to be performed synchronously
+		transitate: function(scenes, options) {
+			if (_.isArray(scenes)) {
+				// scenes = sequence of scenes
+				var _this = this,
+					optionsIsArray = _.isArray(options),
+					// build a taskrunner
+					taskrunner = Taskrunner.build();
 
-			if (synchronous) {
+				_.each(scenes, function(scene, index) {
 
-				var hideDefer = this.transitateElements(hideEls, 'hide', options);
-				
-				return $.when(hideDefer).then(function() {
-					_this.transitateElements(elementIds, 'show', options);
-				});
+					// if options is an array, the options have been set for each of the
+					// transitions. Else, options are common
+					var options = optionsIsArray ? options[index] : options;
+
+					// add a task per scene
+					taskrunner.add(index, function(defer) {
+						_this.transitate(defer, scene, options);
+					});
+				})
+
+				return taskrunner.run();
 
 			} else {
-				// asynch
-				var hideDefer = this.transitateElements(hideEls, 'hide', options),
-					showDefer = this.transitateElements(elementIds, 'show', options);
+				// scenes = a single scene
+				var defer = $.Deferred();
 
-				return $.when.apply(null, [hideDefer, showDefer]);
+				this._transitate(defer, scene);
+
+				return defer;
 			}
 		},
 
-		// transitates elements to a same state.
-		transitateElements: function(elementIds, state, options) {
-			// elementIds: string or array
-			elementIds = _.isArray(elementIds) ? elementIds : [elementIds];
+		// _transitate is a helper function that runs one scene only
+		_transitate: function(defer, scene, options) {
+			var scene = (typeof scene === 'object') ? scene : this._getScene(scene),
+				// build an array with the promises returned by each element.transitate
+				_this = this,
+				elPromises = _.map(scene, function(state, elementId) {
+					return _this.elements[elementId].transitate(state, options);
+				});
 
-			// build a state object
-			var states = {};
-
-			_.each(elementIds, function(id, index) {
-				states[ id ] = state;
-			});
-
-			return this.to(states, options);
+			// pipe the resolution to the defer
+			defer = $.when.apply(null, elPromises);
 		},
-
-		// general method that accepts strings, arrays and state objects
-		// and behaves accordingly.
-		to: function(name_or_states, options) {
-
-			var type = typeof name_or_states;
-
-			if (type === 'string') {
-				// assume name_or_states is a state name
-
-				if (!this.states[ name_or_states ]) {
-					throw new Error('State "' + name_or_states +'" is not defined.');
-				}
-
-				return this._to(this.states[ name_or_states ], options);
-
-			} else if (type === 'object') {
-				// if it is an object, assume it is an state object
-				return this._to(name_or_states, options);
-			}
-		},
-
-		// to helper. 
-		_to: function(states, options) {
-			// states must be a states object indicating at which states each of the 
-			// elements should be.
-
-			var _this = this,
-				defer = $.Deferred(),
-				elDefers = [];			// var to hold all element transition deferrals
-
-			_.each(states, function(elState, elId) {
-				// a 'states' is an hash-object that contains element ids as keys and the 
-				// desired element-state as values: { el-id: el-state }
-
-				var element = _this.elements[ elId ];
-
-				elDefers.push(element.transitate(elState, options));
-			});
-
-			// when all the element transitions are done, resolve the master defer
-			$.when.apply(null, elDefers).then(function() {
-				defer.resolve();
-			});
-
-			return defer;
-		},
-
-		// define a state
-		defineState: function(name, state) {
-			this.states[ name ] = state;
-		},
-
-		// define a transition function
-		defineTransitionMethod: function(name, func) {
-			T.name = func;
-		}
-
+		
 
 	});
-
-
-asdasdasd
 
 	return Transitions;
 });
