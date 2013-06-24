@@ -1,19 +1,5 @@
-define(['jquery','buildable','backbone','underscore','_.mixins'], 
-function(   $   , Buildable , Backbone , undef      , undef    ) {
-	//////////////////
-	///// STATES /////
-	//////////////////
-	// states are individual element style objects
-	var __states = {};
-
-
-	//////////////////
-	///// SCENES /////
-	//////////////////
-	// scenes are hashes with the element ids as keys and the state
-	// each element should be at as 
-	var __scenes = {};
-
+define(['jquery','buildable','taskrunner','backbone','underscore','_.mixins'], 
+function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
 	////////////////////////////
 	// TRANSITIONABLE ELEMENT //
 	////////////////////////////
@@ -22,28 +8,35 @@ function(   $   , Buildable , Backbone , undef      , undef    ) {
 
 	Element.extend(Backbone.Events, {
 		init: function(data) {
-			_.interface({
+			_.interface(data, {
 				id: 'Element init',
-				obj: data,
 				typeofs: {
 				//	id: ['string','number','undefined'],
-					$li: 'object',
+					controller: 'object',
+					$el: 'object',
 				}
 			});
 
 			// bind methods!
 			_.bindAll(this);
 
-			this.id = data.id || data.$li.prop('id');
-			this.$li = data.$li;
+			// reference to transitions controller
+			this.controller = data.controller;
 
-			// this.$el is just the a reference to this.$li
-			this.$el = this.$li;
+			// states
+			this.__states = data.controller.__states;
+			this.__stateOptions = data.controller.__stateOptions;
+
+			this.id = data.$el.prop('id');
+			this.$el = data.$el;
+
+			// this.$el is just the a reference to this.$el
+			this.$el = this.$el;
 
 			//////////////
 			/// status ///
 			//////////////
-			this.state = this.$li.prop('data-state')
+			this.state = this.$el.prop('data-state');
 			this.transition = 'stopped';
 
 			// build
@@ -78,7 +71,7 @@ function(   $   , Buildable , Backbone , undef      , undef    ) {
 		// there is any processing needed (if a function is a property of the state object)
 		_getstate: function(statename) {
 			var _this = this,
-				state = _.clone( __states[statename] );
+				state = _.clone( this.__states[statename] );
 
 			_.each(state, function(item, name) {
 				if (typeof item === 'function') {
@@ -101,7 +94,8 @@ function(   $   , Buildable , Backbone , undef      , undef    ) {
 			if (this.state === statename) {
 				return true;
 			} else {
-				var state = this._getstate(statename);
+				var state = this._getstate(statename),
+					options = _.extend({}, this.__stateOptions[ statename ], options);
 
 				return this.$el.animate(state, options);
 			}
@@ -114,28 +108,33 @@ function(   $   , Buildable , Backbone , undef      , undef    ) {
 	// CONTROLLER //
 	////////////////
 
-	var Transitions = Object.create(Buildable);
+	var Controller = Object.create(Buildable);
 
-	Transitions.extend(Backbone.Events, {
+	Controller.extend(Backbone.Events, {
 		init: function(data) {
-			_.interface({
-				id: 'Transitions init',
-				obj: data,
+			_.interface(data, {
+				id: 'Transition Controller init',
 				typeofs: {
 					id: ['string','undefined'],
-					$ul: 'object',
+					$el: 'object',
 
 					states: ['object', 'undefined'],
-
-					animateoptions: ['object','undefined'],
+					stateOptions: ['object', 'undefined'],
+					scenes: ['object', 'undefined'],
 				}
 			});
 
-			this.$ul = data.$ul;
+			this.$el = data.$el;
 			this.elements = {};
 
-			// options
-			this.animateoptions = data.animateoptions || {};
+			// states
+			this.__states = data.states || {};
+
+			// state options
+			this.__stateOptions = data.__stateOptions || {};
+
+			// scenes
+			this.__scenes = data.scenes || {};
 
 			// build
 			this._build();
@@ -148,7 +147,7 @@ function(   $   , Buildable , Backbone , undef      , undef    ) {
 		_findItems: function() {
 			var _this = this;
 
-			_.each(this.$ul.children('li'), function(li, index) {
+			_.each(this.$el.children('li'), function(li, index) {
 				var $li = $(li),
 					id = $li.prop('id');
 
@@ -157,7 +156,7 @@ function(   $   , Buildable , Backbone , undef      , undef    ) {
 					$li.prop('id', id);
 				}
 
-				_this.elements[ id ] = Element.build({ $li: $li });
+				_this.elements[ id ] = Element.build({ controller: _this, $el: $li });
 			});
 		},
 
@@ -166,26 +165,54 @@ function(   $   , Buildable , Backbone , undef      , undef    ) {
 		// 2: retrieves a state with the given name and returns a scene object that 
 		//	  sets all elements to that state
 		// 3: false
-		_getScene: function(name) {
-			if (__scenes[name]) {
-				return __scenes[name];
+		_getscene: function(name) {
+			if (this.__scenes[name]) {
+				return this.__scenes[name];
 
-			} else if (__states[name]) {
-				var scene = {};
+			} else if (this.__states[name]) {
+				var scene = {},
+					_this = this;
 
 				_.each(this.elements, function(element, id) {
-					scene[id] = __states[name];
+					scene[id] = name;
 				})
 
 				return scene;
+			} else {
+				throw new Error('Scene not found: ' + name);
 			}
 		},
 
 		/////////////////
 		////// API //////
 		/////////////////
-		definestate: function(name, state) {
-			__states[ name ] = state;
+		definestate: function(name, state, options) {
+			var i = _.interface(arguments, [
+				{
+					id: 'single-state',
+					typeofs: ['string','object',['object','undefined']]
+				},
+				{
+					id: 'multiple-state',
+					typeofs: ['object',['object','undefined']]
+				}
+			]);
+
+			if (i === 'single-state') {
+				this.__states[ name ] = state;
+				this.__stateOptions[name] = options;
+
+			} else if (i === 'multiple-state') {
+				this.__states = _.extend(this.__states, name);
+				this.__stateOptions = _.extend(this.__stateOptions, state);
+
+			}
+
+			return this;
+		},
+
+		definescene: function(name, scene) {
+
 		},
 
 		// receives an array of scenes to be performed synchronously
@@ -198,16 +225,15 @@ function(   $   , Buildable , Backbone , undef      , undef    ) {
 					taskrunner = Taskrunner.build();
 
 				_.each(scenes, function(scene, index) {
-
 					// if options is an array, the options have been set for each of the
 					// transitions. Else, options are common
-					var options = optionsIsArray ? options[index] : options;
+					var sceneOptions = optionsIsArray ? options[index] : options;
 
 					// add a task per scene
 					taskrunner.add(index, function(defer) {
-						_this.transitate(defer, scene, options);
+						_this._transitate(defer, scene, sceneOptions);
 					});
-				})
+				});
 
 				return taskrunner.run();
 
@@ -215,7 +241,7 @@ function(   $   , Buildable , Backbone , undef      , undef    ) {
 				// scenes = a single scene
 				var defer = $.Deferred();
 
-				this._transitate(defer, scene);
+				this._transitate(defer, scenes, options);
 
 				return defer;
 			}
@@ -223,19 +249,19 @@ function(   $   , Buildable , Backbone , undef      , undef    ) {
 
 		// _transitate is a helper function that runs one scene only
 		_transitate: function(defer, scene, options) {
-			var scene = (typeof scene === 'object') ? scene : this._getScene(scene),
+			var scene = (typeof scene === 'object') ? scene : this._getscene(scene),
 				// build an array with the promises returned by each element.transitate
 				_this = this,
-				elPromises = _.map(scene, function(state, elementId) {
-					return _this.elements[elementId].transitate(state, options);
+				elPromises = _.map(scene, function(statename, elementId) {
+					return _this.elements[elementId].transitate(statename, options);
 				});
 
 			// pipe the resolution to the defer
-			defer = $.when.apply(null, elPromises);
+			$.when.apply(null, elPromises).then(defer.resolve);
 		},
 		
 
 	});
 
-	return Transitions;
+	return Controller;
 });

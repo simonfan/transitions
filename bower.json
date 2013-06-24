@@ -10,7 +10,8 @@
 	    "qunit": "latest",
 
 	    "buildable": "git://github.com/simonfan/buildable.git",
-	    "_.mixins": "git://github.com/simonfan/_.mixins.git"
+	    "_.mixins": "git://github.com/simonfan/_.mixins.git",
+	    "taskrunner": "simonfan/taskrunner"
 	},
 
 	"main": "transitions.js"
