@@ -55,8 +55,8 @@ function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
 		},
 
 		_setupEvents: function() {
-			this.on('transition-ini', this._handleIni);
-			this.on('transition-end', this._handleEnd);
+			this.on('state-ini', this._handleIni);
+			this.on('state-end', this._handleEnd);
 		},
 
 		_handleIni: function(statename) {
@@ -85,7 +85,7 @@ function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
 			_.each(state, function(item, name) {
 				if (typeof item === 'function') {
 					// call the function in the $el's context.
-					state[ name ] = item.call(_this.$el);
+					state[ name ] = item.call(_this.$el, _this.$el);
 				}
 			});
 
@@ -110,10 +110,10 @@ function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
 					options = _.extend({}, this.__stateOptions[ statename ], options),
 					animate = this.$el.stop().animate(state, options);
 
-				this.trigger('transition-ini', statename);
+				this.trigger('state-ini', statename);
 
 				$.when(animate).then(function() {
-					_this.trigger('transition-end', statename);
+					_this.trigger('state-end', statename);
 				});
 
 				return animate;
@@ -203,8 +203,8 @@ function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
 
 		// event handlers
 		_setupEvents: function() {
-			this.on('transition-ini', this._handleIni);
-			this.on('transition-end', this._handleEnd);
+			this.on('scene-ini', this._handleIni);
+			this.on('scene-end', this._handleEnd);
 		},
 
 		_handleIni: function(scenename) {
@@ -325,15 +325,26 @@ function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
 					});
 				});
 
-				return taskrunner.run();
+				// trigger transition-ini and transition-end events
+				this.trigger('transition-ini');
+
+				return taskrunner.run().then(function() {
+					_this.trigger('transition-end');
+				});
 
 			} else {
 				// scenes = a single scene
-				var defer = $.Deferred();
+				var _this = this,
+					defer = $.Deferred();
 
 				this._transitate(defer, scenes, options);
 
-				return defer;
+				// trigger transition-ini and transition-end events
+				this.trigger('transition-ini');
+
+				return defer.then(function() {
+					_this.trigger('transition-end');
+				});
 			}
 		},
 
@@ -358,6 +369,18 @@ function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
 					scenename = $.param(scene);
 
 				this.definescene(scenename, scene);
+
+			} else if (typeof scenename === 'string') {
+				// check if scenename has ':'. This will be parsed as 'elementId:state' => { elementId: state }
+				var split = scenename.split(':', 2);
+
+				if (split.length === 2 && split[1]) {
+
+					var scene = {};
+					scene[ split[0] ] = split[1];
+
+					this.definescene(scenename, scene);
+				}
 			}
 
 				// if scene is not yet defined, get it using scenename
@@ -370,11 +393,11 @@ function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
 				});
 
 			// event
-			this.trigger('transition-ini', scenename);
+			this.trigger('scene-ini', scenename);
 
 			// pipe the resolution to the defer
 			$.when.apply(null, elPromises).then(function() {
-				_this.trigger('transition-end', scenename);
+				_this.trigger('scene-end', scenename);
 
 				// resolve as last
 				defer.resolve();

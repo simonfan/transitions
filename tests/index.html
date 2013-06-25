@@ -19,6 +19,10 @@
 	<link rel="stylesheet" type="text/css" href="../transitions.css">
 
 	<style type="text/css">
+		#displayer {
+			height: 100px;
+		}
+
 		#clear {
 			clear: both;
 		}
@@ -63,18 +67,36 @@
 
 <body>
 
+	<div id="displayer"></div>
+
 	<ul id="nav">
 		<li data-to="first">1st</li>
 		<li data-to="second">2nd</li>
 		<li data-to="third">3rd</li>
 		<li data-to="fourth">4th</li>
+		<li data-to="all">ALL</li>
+		<li data-to="odd">ODD</li>
+		<li data-to="even">EVEN</li>
+		<li data-to="even-half">EVEN half</li>
 	</ul>
 
 	<ul id="transition-list" class="transition-list">
-		<li id="first" data-inistate="fadeOut">1</li>
-		<li id="second" data-inistate="fadeIn">2</li>
-		<li id="third" data-inistate="not-existent-state">3</li>
-		<li id="fourth" >4</li>
+		<li id="first" data-inistate="fadeOut" data-hide-opacity="0.05">
+			1 this one has hide-opacity = 0.05
+			<div></div>
+		</li>
+		<li id="second" data-inistate="fadeIn">
+			2
+			<div></div>
+		</li>
+		<li id="third" data-inistate="not-existent-state">
+			3
+			<div></div>
+		</li>
+		<li id="fourth" >
+			4
+			<div></div>
+		</li>
 	</ul>
 
 	<br>
