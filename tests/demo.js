@@ -18,7 +18,7 @@ define(['transitions'], function(Transitions) {
 		},
 		{
 			'fadeOut': { duration: 300 },
-			'fadeIn': { duration: 1000 },
+			'fadeIn': { duration: 2500 },
 		}
 	);
 
@@ -34,4 +34,10 @@ define(['transitions'], function(Transitions) {
 		objective[$(e.target).attr('data-to')] = 'fadeIn';
 		transitions.transitate(['fadeOut', objective])
 	});
+
+
+
+
+	// start the transitions
+	transitions.start();
 });

@@ -30,25 +30,33 @@
 			#transition-list li {
 				height: 400px;
 				width: 100%;
+
+				opacity: 0;
+
+				float: left;
+				width: 200px;
 			}
 
 			#first {
-				opacity: 1;
-
 				background-color: red;
 			}
 
 			#second {
-				opacity: 0;
-
-				background-color: #444;
+				background-color: #ff4f8a;
 			}
 
 			#third {
-				opacity: 0;
-
 				background-color: #efefef;
 			}
+
+			#fourth {
+				background-color: green;
+			}
+
+		#nav li:hover {
+			cursor: pointer;
+			background-color: #efefef;
+		}
 	</style>
 	
 </head>
@@ -59,12 +67,14 @@
 		<li data-to="first">1st</li>
 		<li data-to="second">2nd</li>
 		<li data-to="third">3rd</li>
+		<li data-to="fourth">4th</li>
 	</ul>
 
 	<ul id="transition-list" class="transition-list">
-		<li id="first" >1</li>
-		<li id="second" >2</li>
-		<li id="third" >3</li>
+		<li id="first" data-inistate="fadeOut">1</li>
+		<li id="second" data-inistate="fadeIn">2</li>
+		<li id="third" data-inistate="not-existent-state">3</li>
+		<li id="fourth" >4</li>
 	</ul>
 
 	<br>

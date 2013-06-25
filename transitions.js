@@ -1,5 +1,11 @@
 define(['jquery','buildable','taskrunner','backbone','underscore','_.mixins'], 
 function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
+
+	////////////////////////
+	//////// COMMON ////////
+	////////////////////////
+
+
 	////////////////////////////
 	// TRANSITIONABLE ELEMENT //
 	////////////////////////////
@@ -36,7 +42,8 @@ function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
 			//////////////
 			/// status ///
 			//////////////
-			this.state = this.$el.prop('data-state');
+			this.inistate = this.$el.attr('data-inistate');
+			this.state = '';
 			this.transition = 'stopped';
 
 			// build
@@ -52,18 +59,20 @@ function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
 			this.on('transition-end', this._handleEnd);
 		},
 
-		_handleIni: function(state) {
+		_handleIni: function(statename) {
 			this.transition = 'active';
 
-			this.trigger(state + '-ini');
+			this.state = 'on-transition:' + statename;
+
+			this.trigger(statename + '-ini');
 		},
 
-		_handleEnd: function(state) {
+		_handleEnd: function(statename) {
 			this.transition = 'stopped';
-			this.state = state;
+			this.state = statename;
 
-			this.trigger(state + '-end')
-				.trigger(state);
+			this.trigger(statename + '-end')
+				.trigger(statename);
 		},
 
 		/// close to api ///
@@ -91,16 +100,37 @@ function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
 		// using any of the defined transition methods defined, including
 		// the 'hide' and 'show'
 		transitate: function(statename, options) {
-			if (this.state === statename) {
+			if (!statename) { return true; }
+
+			if (this._isDone(statename)) {
 				return true;
 			} else {
-				var state = this._getstate(statename),
-					options = _.extend({}, this.__stateOptions[ statename ], options);
+				var _this = this,
+					state = this._getstate(statename),
+					options = _.extend({}, this.__stateOptions[ statename ], options),
+					animate = this.$el.stop().animate(state, options);
 
-				return this.$el.animate(state, options);
+				this.trigger('transition-ini', statename);
+
+				$.when(animate).then(function() {
+					_this.trigger('transition-end', statename);
+				});
+
+				return animate;
 			}
 		},
+
+		// check if transition is done or if it is already on its way
+		_isDone: function(statename) {
+			if (this.state === statename || this.state === statename.split('on-transition:')[1]) {
+				return true;
+			}
+		}
 	});
+
+	////////////////////////////
+	// TRANSITIONABLE ELEMENT //
+	////////////////////////////
 
 
 
@@ -121,33 +151,44 @@ function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
 					states: ['object', 'undefined'],
 					stateOptions: ['object', 'undefined'],
 					scenes: ['object', 'undefined'],
+					sceneOptions: ['object', 'undefined'],
 				}
 			});
 
 			this.$el = data.$el;
 			this.elements = {};
 
+			// status
+			this.status = 'stopped';
+			this.scene = '';
+
 			// states
 			this.__states = data.states || {};
-
-			// state options
-			this.__stateOptions = data.__stateOptions || {};
+			this.__stateOptions = data.stateOptions || {};
 
 			// scenes
 			this.__scenes = data.scenes || {};
+			this.__sceneOptions = data.sceneOptions || {};
 
 			// build
 			this._build();
+
+			// start the elements to their correct state;
+		//	this._start();
 		},
 
 		_build: function() {
 			this._findItems();
+			this._setupEvents();
 		},
 
 		_findItems: function() {
-			var _this = this;
+			var _this = this,
+				transitionEls = this.$el.children('.transition-el');
 
-			_.each(this.$el.children('li'), function(li, index) {
+			transitionEls = transitionEls.length > 0 ? transitionEls : this.$el.children();
+
+			_.each(transitionEls, function(li, index) {
 				var $li = $(li),
 					id = $li.prop('id');
 
@@ -158,6 +199,28 @@ function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
 
 				_this.elements[ id ] = Element.build({ controller: _this, $el: $li });
 			});
+		},
+
+		// event handlers
+		_setupEvents: function() {
+			this.on('transition-ini', this._handleIni);
+			this.on('transition-end', this._handleEnd);
+		},
+
+		_handleIni: function(scenename) {
+			this.status = 'active';
+			this.scene = 'on-transition:' + scenename;
+
+			this.trigger(scenename + '-ini');
+		},
+
+		_handleEnd: function(scenename) {
+			this.status = 'stopped';
+			this.scene = scenename;
+
+			this.trigger(scenename + '-end')
+				.trigger(scenename);
+
 		},
 
 		// conditional chain:
@@ -211,12 +274,36 @@ function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
 			return this;
 		},
 
-		definescene: function(name, scene) {
+		definescene: function(name, scene, options) {
+			var i = _.interface(arguments, [
+				{
+					id: 'single-scene',
+					typeofs: ['string','object',['object','undefined']]
+				},
+				{
+					id: 'multiple-scene',
+					typeofs: ['object',['object','undefined']]
+				}
+			]);
 
+			if (i === 'single-scene') {
+				this.__scenes[ name ] = scene;
+				this.__sceneOptions[ name ] = options;
+			} else if (i === 'multiple-scene') {
+				this.__scenes = _.extend(this.__scenes, name);
+				this.__sceneOptions = _.extend(this.__sceneOptions, scene);
+			}
 		},
 
 		// receives an array of scenes to be performed synchronously
 		transitate: function(scenes, options) {
+
+			// verify the objective of the transition to see if 
+			// the transition is not already there
+			if (this._isDone(scenes)) {
+				return true;
+			}
+
 			if (_.isArray(scenes)) {
 				// scenes = sequence of scenes
 				var _this = this,
@@ -228,6 +315,9 @@ function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
 					// if options is an array, the options have been set for each of the
 					// transitions. Else, options are common
 					var sceneOptions = optionsIsArray ? options[index] : options;
+
+					// extend the default options for the scene
+					sceneOptions = _.extend({}, this.__sceneOptions, sceneOptions);
 
 					// add a task per scene
 					taskrunner.add(index, function(defer) {
@@ -247,19 +337,68 @@ function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
 			}
 		},
 
+		_isDone: function(scenes) {
+			var objective = _.isArray(scenes) ? _.last(scenes) : scenes;
+
+			objective = typeof objective === 'object' ? $.param(objective) : objective;
+
+			// if the transition status is stopped, compare the scene directly to the objective
+			// if the transition is active, compare the scene portion after 'on-transition:' with the objective
+			return this.status === 'stopped' ? (this.scene === objective) : (this.scene.split('on-transition:')[1] === objective);
+		},
+
 		// _transitate is a helper function that runs one scene only
-		_transitate: function(defer, scene, options) {
-			var scene = (typeof scene === 'object') ? scene : this._getscene(scene),
+		// it adapts itself to the format established by Taskrunner tasks
+		_transitate: function(defer, scenename, options) {
+
+			if (typeof scenename === 'object') {
+				// if scenename is actually a scene object,
+				// first define it
+				var scene = _.clone(scenename),
+					scenename = $.param(scene);
+
+				this.definescene(scenename, scene);
+			}
+
+				// if scene is not yet defined, get it using scenename
+			var scene = scene || this._getscene(scenename),
 				// build an array with the promises returned by each element.transitate
-				_this = this,
-				elPromises = _.map(scene, function(statename, elementId) {
+				_this = this;
+
+			var	elPromises = _.map(scene, function(statename, elementId) {
 					return _this.elements[elementId].transitate(statename, options);
 				});
 
+			// event
+			this.trigger('transition-ini', scenename);
+
 			// pipe the resolution to the defer
-			$.when.apply(null, elPromises).then(defer.resolve);
+			$.when.apply(null, elPromises).then(function() {
+				_this.trigger('transition-end', scenename);
+
+				// resolve as last
+				defer.resolve();
+			});
 		},
-		
+
+		// starts the elements to the states defined either in 
+		// the element html 'data-state' value.
+		start: function(scenename) {
+			var scenename = scenename || this.$el.attr('data-iniscene');
+
+			if (scenename) {
+				this.transitate(scenename);
+			} else {
+
+				var scene = {};
+
+				_.each(this.elements, function(element, id) {
+					scene[id] = element.inistate;
+				});
+
+				this.transitate(scene);
+			}
+		},
 
 	});
 
