@@ -107,8 +107,13 @@ function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
 			} else {
 				var _this = this,
 					state = this._getstate(statename),
-					options = _.extend({}, this.__stateOptions[ statename ], options),
-					animate = this.$el.stop().animate(state, options);
+					options = _.extend({}, this.__stateOptions[ statename ], options);
+
+				if (typeof options.before === 'function') {
+					options.before.call(this.$el, this.$el[0]);
+				}
+
+				var animate = this.$el.stop().animate(state, options);
 
 				this.trigger('state-ini', statename);
 
