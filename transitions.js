@@ -325,7 +325,7 @@ function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
 					sceneOptions = _.extend({}, this.__sceneOptions, sceneOptions);
 
 					// add a task per scene
-					taskrunner.add(index, function(defer) {
+					taskrunner.add(function(defer) {
 						_this._transitate(defer, scene, sceneOptions);
 					});
 				});
