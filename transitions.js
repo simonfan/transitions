@@ -24,7 +24,7 @@ function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
 			});
 
 			// bind methods!
-			_.bindAll(this);
+			_.bindAll(this,'_handleIni','_handleEnd');
 
 			// reference to transitions controller
 			this.controller = data.controller;
