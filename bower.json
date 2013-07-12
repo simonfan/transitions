@@ -1,18 +1,14 @@
 {
-	"name": "transitions",
-	"version": "1.0.0",
-	"dependencies": {
-		"jquery": "lastest",
-		"underscore": "latest",
-		"backbone": "latest",
-		"requirejs": "latest",
-
-	    "qunit": "latest",
-
-	    "buildable": "git://github.com/simonfan/buildable.git",
-	    "_.mixins": "git://github.com/simonfan/_.mixins.git",
-	    "taskrunner": "simonfan/taskrunner"
-	},
-
-	"main": "transitions.js"
+  "name": "transitions",
+  "version": "1.0.0",
+  "dependencies": {
+    "jquery": "lastest",
+    "underscore": "latest",
+    "backbone": "latest",
+    "requirejs": "latest",
+    "buildable": "git://github.com/simonfan/buildable.git",
+    "_.mixins": "git://github.com/simonfan/_.mixins.git",
+    "cascade": "simonfan/cascade"
+  },
+  "main": "transitions.js"
 }

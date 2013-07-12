@@ -9,7 +9,9 @@ require.config({
 
 		'buildable': 'components/buildable/buildable',
 		'_.mixins': 'components/_.mixins/_.mixins',
-		'taskrunner': 'components/taskrunner/taskrunner',
+		'cascade': 'components/cascade/cascade',
+
+		'eventemitter2': 'components/eventemitter2/lib/eventemitter2',
 
 		// the module files go here
 		'transitions': '../transitions',

@@ -1,5 +1,5 @@
-define(['jquery','buildable','taskrunner','backbone','underscore','_.mixins'], 
-function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
+define(['jquery','buildable','cascade','backbone','underscore','_.mixins'], 
+function(   $   , Buildable , Cascade , Backbone , undef      , undef    ) {
 
 	////////////////////////
 	//////// COMMON ////////
@@ -313,8 +313,8 @@ function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
 				// scenes = sequence of scenes
 				var _this = this,
 					optionsIsArray = _.isArray(options),
-					// build a taskrunner
-					taskrunner = Taskrunner.build();
+					// build a cascade
+					cascade = Cascade.build();
 
 				_.each(scenes, function(scene, index) {
 					// if options is an array, the options have been set for each of the
@@ -325,7 +325,7 @@ function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
 					sceneOptions = _.extend({}, this.__sceneOptions, sceneOptions);
 
 					// add a task per scene
-					taskrunner.add(function(defer) {
+					cascade.add(function(defer) {
 						_this._transitate(defer, scene, sceneOptions);
 					});
 				});
@@ -333,7 +333,7 @@ function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
 				// trigger transition-ini and transition-end events
 				this.trigger('transition-ini');
 
-				return taskrunner.run().then(function() {
+				return cascade.run().then(function() {
 					_this.trigger('transition-end');
 				});
 
@@ -364,7 +364,7 @@ function(   $   , Buildable , Taskrunner , Backbone , undef      , undef    ) {
 		},
 
 		// _transitate is a helper function that runs one scene only
-		// it adapts itself to the format established by Taskrunner tasks
+		// it adapts itself to the format established by cascade tasks
 		_transitate: function(defer, scenename, options) {
 
 			if (typeof scenename === 'object') {
